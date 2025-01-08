@@ -33,3 +33,7 @@
     pointer-events: none;
   }
 }
+
+.backdrop-blur-96 {
+  backdrop-filter: blur(96px);
+}

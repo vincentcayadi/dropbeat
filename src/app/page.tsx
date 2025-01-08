@@ -155,11 +155,7 @@ export default function Home() {
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
     >
-      {/* White overlay with blur */}
-      <div
-        className="absolute inset-0 z-0 bg-black/20"
-        style={{ "backdrop-filter": "blur(96px)" }}
-      ></div>
+      <div className="absolute inset-0 bg-black/20 backdrop-blur-96"></div>
 
       {dragging && (
         <div className="absolute inset-0 bg-[#282828]/60 bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
@@ -179,7 +175,7 @@ export default function Home() {
           >
             {metadata.artworkUrl ? (
               <Image
-                src={metadata.artworkUrl || ""} 
+                src={metadata.artworkUrl || ""}
                 alt="Album Artwork"
                 width={300} // Adjust size to match your design
                 height={300}
