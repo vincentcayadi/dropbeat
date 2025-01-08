@@ -5,6 +5,7 @@ import { Metadata } from "../types";
 import { parseMusicMetadata } from "../utils/parseMusicMetadata";
 import { Play, Pause, FastForward, Rewind } from "lucide-react";
 import gsap from "gsap";
+import Image from "next/image";
 
 export default function Home() {
   const [dragging, setDragging] = useState(false);
@@ -177,10 +178,12 @@ export default function Home() {
             } aspect-square`}
           >
             {metadata.artworkUrl ? (
-              <img
-                src={metadata.artworkUrl}
+              <Image
+                src={metadata.artworkUrl || ""} 
                 alt="Album Artwork"
-                className="w-[70%] h-[70%] rounded-full z-10"
+                width={300} // Adjust size to match your design
+                height={300}
+                className="rounded-full z-10"
               />
             ) : (
               <div className="w-[70%] h-[70%] bg-gray-300 rounded-full flex items-center justify-center z-10">

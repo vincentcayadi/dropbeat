@@ -7,7 +7,7 @@ export const parseMusicMetadata = (
   return new Promise((resolve, reject) => {
     new jsmediatags.Reader(file).read({
       onSuccess: (tag: any) => {
-        const { title, artist, album, picture, USLT } = tag.tags;
+        const { title, artist, album, picture } = tag.tags;
 
         // Convert artwork to base64
         let artworkUrl: string | null = null;
@@ -18,8 +18,6 @@ export const parseMusicMetadata = (
           artworkUrl = `data:${picture.format};base64,${btoa(base64String)}`;
         }
 
-        // Extract and parse lyrics if available
-
         const metadata = {
           title: title || "Unknown Title",
           artist: artist || "Unknown Artist",
@@ -29,7 +27,7 @@ export const parseMusicMetadata = (
 
         resolve({ metadata });
       },
-      onError: (error) => {
+      onError: (error: Error) => {
         reject(error);
       },
     });
