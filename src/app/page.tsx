@@ -173,13 +173,12 @@ export default function Home() {
               metadata.artworkUrl ? "max-w-[70%]" : "w-[70%] "
             } aspect-square`}
           >
+          
             {metadata.artworkUrl ? (
-              <Image
-                src={metadata.artworkUrl || ""}
+              <img
+                src={metadata.artworkUrl}
                 alt="Album Artwork"
-                width={300} // Adjust size to match your design
-                height={300}
-                className="rounded-full z-10"
+                className="w-[70%] h-[70%] rounded-full z-10"
               />
             ) : (
               <div className="w-[70%] h-[70%] bg-gray-300 rounded-full flex items-center justify-center z-10">
