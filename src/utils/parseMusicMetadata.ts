@@ -1,3 +1,5 @@
+// @ts-ignore
+
 import jsmediatags from "jsmediatags/dist/jsmediatags.min.js";
 import { Metadata } from "../types";
 
