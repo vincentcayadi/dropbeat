@@ -20,13 +20,13 @@ export default function Home() {
   const [lyrics, setLyrics] = useState<string>("No lyrics available");
   const [tempLyrics, setTempLyrics] = useState<string>("No lyrics available"); // Temporary lyrics state for animation
   const [isPlaying, setIsPlaying] = useState(false);
+  const [lyricsVisible, setLyricsVisible] = useState(true); // State to toggle lyrics visibility
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const vinylRef = useRef<HTMLDivElement | null>(null);
   const lyricsRef = useRef<HTMLDivElement | null>(null);
-  const initialLoadRef = useRef<boolean>(true); // Prevents animation on first render
-  const timelineRef = useRef<GSAPTimeline | null>(null);
+  const initialLoadRef = useRef<boolean>(true);
 
   const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -113,6 +113,10 @@ export default function Home() {
     }
   };
 
+  const toggleLyricsVisibility = () => {
+    setLyricsVisible(!lyricsVisible);
+  };
+
   useEffect(() => {
     const audio = audioRef.current;
 
@@ -149,8 +153,7 @@ export default function Home() {
     if (!initialLoadRef.current && lyricsRef.current) {
       const timeline = gsap.timeline({
         onComplete: () => {
-          // Update the tempLyrics state to new lyrics after fade-out completes
-          setTempLyrics(lyrics);
+          setTempLyrics(lyrics); // Update to new lyrics after fade-out completes
         },
       });
 
@@ -160,10 +163,6 @@ export default function Home() {
         y: -10,
         duration: 0.5,
         ease: "power2.out",
-        onComplete: () => {
-          // Update lyricsRef content immediately after fade-out
-          setTempLyrics(lyrics);
-        },
       });
 
       // Fade in new lyrics
@@ -174,7 +173,6 @@ export default function Home() {
         ease: "power2.in",
       });
     } else {
-      // On initial load, directly set tempLyrics without animation
       setTempLyrics(lyrics);
       initialLoadRef.current = false;
     }
@@ -195,7 +193,7 @@ export default function Home() {
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
     >
-      <div className="absolute inset-0 bg-black/20 backdrop-blur-96"></div>
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-96"></div>
 
       {dragging && (
         <div className="absolute inset-0 bg-[#282828]/60 flex items-center justify-center z-50 backdrop-blur-sm">
@@ -227,24 +225,30 @@ export default function Home() {
           </div>
         </div>
         <div className="grid grid-cols-3 grid-rows-2 h-full justify-items-end z-20 overflow-hidden">
-          <div
-            ref={lyricsRef}
-            className="row-span-2 col-span-2 justify-self-start p-4 overflow-y-auto text-left font-semibold leading-relaxed text-lg"
-          >
-            {tempLyrics.split("\n\n").map((paragraph, pIndex) => (
-              <div key={pIndex} className="mb-6">
-                {paragraph.split("\n").map((line, lIndex) => (
-                  <p key={lIndex}>{line}</p>
-                ))}
-              </div>
-            ))}
-          </div>
+          {lyricsVisible ? (
+            <div
+              ref={lyricsRef}
+              className="row-span-2 col-span-2 justify-self-start p-4 overflow-y-auto text-left font-semibold leading-relaxed text-lg"
+            >
+              {tempLyrics.split("\n\n").map((paragraph, pIndex) => (
+                <div key={pIndex} className="mb-6">
+                  {paragraph.split("\n").map((line, lIndex) => (
+                    <p key={lIndex}>{line}</p>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="row-span-2 col-span-2" />
+          )}
           <SongInfo title={metadata.title} artist={metadata.artist} />
           <Controls
             isPlaying={isPlaying}
             onPlayPause={handlePlayPause}
             onRewind={handleRewind}
             onFastForward={handleFastForward}
+            lyricsVisible={lyricsVisible}
+            onToggleLyrics={toggleLyricsVisibility}
           />
         </div>
       </div>

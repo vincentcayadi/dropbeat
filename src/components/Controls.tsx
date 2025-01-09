@@ -1,10 +1,12 @@
-import { Play, Pause, FastForward, Rewind } from "lucide-react";
+import { Play, Pause, FastForward, Rewind, Music3 } from "lucide-react";
 
 interface ControlsProps {
   isPlaying: boolean;
   onPlayPause: () => void;
   onRewind: () => void;
   onFastForward: () => void;
+  lyricsVisible: boolean; // New prop for lyrics visibility
+  onToggleLyrics: () => void; // New prop for toggling lyrics
 }
 
 const Controls: React.FC<ControlsProps> = ({
@@ -12,9 +14,22 @@ const Controls: React.FC<ControlsProps> = ({
   onPlayPause,
   onRewind,
   onFastForward,
+  lyricsVisible,
+  onToggleLyrics,
 }) => {
   return (
     <div className="flex flex-col justify-end">
+      <button
+        onClick={onToggleLyrics}
+        className="p-4 hover:scale-95 transition duration-300"
+      >
+        <Music3
+          size={26}
+          color="#EBEBEB"
+          fill={lyricsVisible ? "#EBEBEB" : "none"} // Filled when enabled
+          className="drop-shadow-lg"
+        />
+      </button>
       <button
         onClick={onRewind}
         className="p-4 hover:scale-95 transition duration-300"
