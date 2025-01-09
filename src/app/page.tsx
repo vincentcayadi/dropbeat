@@ -3,9 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import { Metadata } from "../types";
 import { parseMusicMetadata } from "../utils/parseMusicMetadata";
-import { Play, Pause, FastForward, Rewind } from "lucide-react";
 import gsap from "gsap";
-import Image from "next/image";
+import Controls from "@/components/Controls";
+import SongInfo from "@/components/SongInfo";
 
 export default function Home() {
   const [dragging, setDragging] = useState(false);
@@ -173,7 +173,6 @@ export default function Home() {
               metadata.artworkUrl ? "max-w-[70%]" : "w-[70%] "
             } aspect-square`}
           >
-          
             {metadata.artworkUrl ? (
               <img
                 src={metadata.artworkUrl}
@@ -191,59 +190,14 @@ export default function Home() {
         <div className="relative flex flex-col h-full">
           {/* Frosted Glass Overlay */}
 
-          {/* Vertical Song Info */}
-          <div className="absolute top-0 right-0 z-20">
-            <div className="rotate-270" style={{ writingMode: "vertical-rl" }}>
-              <div className="font-bold text-3xl overflow-hidden whitespace-nowrap tracking-tighter">
-                {metadata.title || "Sample Title"}
-              </div>
-              <h2 className=" text-lg tracking-tight text-[#e7e7e7]">
-                {metadata.artist || "Musician Name"}
-              </h2>
-            </div>
-          </div>
+          <SongInfo title={metadata.title} artist={metadata.artist} />
 
-          {/* Playback Buttons */}
-          <div className="absolute bottom-0 right-0 flex flex-col z-20">
-            {/* Rewind Button */}
-            <div>
-              <button
-                onClick={handleRewind}
-                className="p-4 hover:scale-95 transition duration-300"
-              >
-                <Rewind size={26} color="#EBEBEB" className="drop-shadow-lg" />
-              </button>
-            </div>
-
-            {/* Play/Pause Button */}
-            <div>
-              <button
-                onClick={handlePlayPause}
-                className={`p-4 hover:scale-95 transition duration-300 ${
-                  isPlaying ? "animate-play-to-pause" : "animate-pause-to-play"
-                }`}
-              >
-                {isPlaying ? (
-                  <Pause size={26} color="#EBEBEB" className="drop-shadow-lg" />
-                ) : (
-                  <Play size={26} color="#EBEBEB" className="drop-shadow-lg" />
-                )}
-              </button>
-            </div>
-            {/* Fast Forward Button */}
-            <div>
-              <button
-                onClick={handleFastForward}
-                className="p-4 hover:scale-95 transition duration-300 "
-              >
-                <FastForward
-                  size={26}
-                  color="#EBEBEB"
-                  className="drop-shadow-lg"
-                />
-              </button>
-            </div>
-          </div>
+          <Controls
+            isPlaying={isPlaying}
+            onPlayPause={handlePlayPause}
+            onRewind={() => (audioRef.current!.currentTime -= 5)}
+            onFastForward={() => (audioRef.current!.currentTime += 5)}
+          />
         </div>
       </div>
     </section>
