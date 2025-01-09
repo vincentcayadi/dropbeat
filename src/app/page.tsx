@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Metadata } from "../types";
 import { parseMusicMetadata } from "../utils/parseMusicMetadata";
+import fetchLyrics from "@/utils/fetchLyrics";
 import gsap from "gsap";
 import Controls from "@/components/Controls";
 import SongInfo from "@/components/SongInfo";
@@ -16,8 +17,9 @@ export default function Home() {
     album: "",
     artworkUrl: null,
   });
+  const [lyrics, setLyrics] = useState<string>("No lyrics available");
   const [isPlaying, setIsPlaying] = useState(false);
-  const [backgroundImage, setBackgroundImage] = useState<string | null>(null); // Stores the background artwork URL
+  const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const vinylRef = useRef<HTMLDivElement | null>(null);
@@ -31,44 +33,47 @@ export default function Home() {
       const uploadedFile = droppedFiles[0];
       setFile(uploadedFile);
 
-      // Reset everything to the initial state
+      // Reset everything
       if (audioRef.current) {
-        audioRef.current.pause(); // Stop current audio
-        audioRef.current.currentTime = 0; // Reset playback time
-        gsap.killTweensOf(vinylRef.current); // Stop vinyl rotation
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        gsap.killTweensOf(vinylRef.current);
       }
-      setIsPlaying(false); // Ensure play/pause state is reset
+      setIsPlaying(false);
 
       try {
         const { metadata } = await parseMusicMetadata(uploadedFile);
         setMetadata(metadata);
 
-        // Load the new audio file
+        // Autoplay audio
         if (audioRef.current) {
           audioRef.current.src = URL.createObjectURL(uploadedFile);
+          audioRef.current.load();
+          audioRef.current.play();
 
-          // Autoplay the audio after it is loaded
-          audioRef.current.load(); // Ensure the audio is loaded
-          audioRef.current.play(); // Play the audio
-
-          // Start vinyl rotation animation
-          gsap.killTweensOf(vinylRef.current); // Stop any ongoing animation
+          gsap.killTweensOf(vinylRef.current);
           gsap.to(vinylRef.current, {
-            rotation: "+=360", // Continue rotating
-            repeat: -1, // Infinite loop
-            duration: 5, // Adjust duration as needed
-            ease: "linear", // Maintain constant velocity
+            rotation: "+=360",
+            repeat: -1,
+            duration: 5,
+            ease: "linear",
           });
 
-          setIsPlaying(true); // Set play state to true
+          setIsPlaying(true);
         }
 
-        // Set the artwork as the background image
-        if (metadata.artworkUrl) {
-          setBackgroundImage(metadata.artworkUrl);
+        setBackgroundImage(metadata.artworkUrl || null);
+
+        // Fetch lyrics
+        if (metadata.title && metadata.artist) {
+          const fetchedLyrics = await fetchLyrics(
+            metadata.artist,
+            metadata.title
+          );
+          setLyrics(fetchedLyrics || "No lyrics available");
         }
       } catch (error) {
-        console.error("Error parsing metadata:", error);
+        console.error("Error parsing metadata or fetching lyrics:", error);
       }
     }
   };
@@ -77,18 +82,15 @@ export default function Home() {
     if (!audioRef.current) return;
 
     if (isPlaying) {
-      // Pause the audio and stop the vinyl rotation
       audioRef.current.pause();
-      gsap.killTweensOf(vinylRef.current); // Stop vinyl rotation
+      gsap.killTweensOf(vinylRef.current);
     } else {
-      // Play the audio and start vinyl rotation
       audioRef.current.play();
-      gsap.killTweensOf(vinylRef.current); // Stop any ongoing animation
       gsap.to(vinylRef.current, {
-        rotation: "+=360", // Continue rotating
-        repeat: -1, // Infinite loop
-        duration: 5, // Adjust duration as needed
-        ease: "linear", // Maintain constant velocity
+        rotation: "+=360",
+        repeat: -1,
+        duration: 5,
+        ease: "linear",
       });
     }
 
@@ -97,13 +99,13 @@ export default function Home() {
 
   const handleRewind = () => {
     if (audioRef.current) {
-      audioRef.current.currentTime -= 5; // Rewind 5 seconds
+      audioRef.current.currentTime -= 5;
     }
   };
 
   const handleFastForward = () => {
     if (audioRef.current) {
-      audioRef.current.currentTime += 5; // Fast forward 5 seconds
+      audioRef.current.currentTime += 5;
     }
   };
 
@@ -143,10 +145,9 @@ export default function Home() {
     <section
       className="w-screen h-screen bg-[#282828] p-12 text-[#EBEBEB] relative overflow-hidden"
       style={{
-        backgroundImage: backgroundImage ? `url(${backgroundImage})` : "none", // Use the artwork as the background image
-        backgroundSize: "110%", // Increase the size for a zoom effect
-
-        backgroundPosition: "center", // Center the zoomed-in artwork
+        backgroundImage: backgroundImage ? `url(${backgroundImage})` : "none",
+        backgroundSize: "110%",
+        backgroundPosition: "center",
       }}
       onDragOver={(e) => {
         e.preventDefault();
@@ -158,19 +159,19 @@ export default function Home() {
       <div className="absolute inset-0 bg-black/20 backdrop-blur-96"></div>
 
       {dragging && (
-        <div className="absolute inset-0 bg-[#282828]/60 bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
+        <div className="absolute inset-0 bg-[#282828]/60 flex items-center justify-center z-50 backdrop-blur-sm">
           <p className="text-2xl font-bold tracking-tight">
             Drop your music file here!
           </p>
         </div>
       )}
       <audio ref={audioRef} />
-      <div className="grid grid-cols-1 md:grid-cols-2 h-full mx-auto ">
+      <div className="grid grid-cols-1 md:grid-cols-2 h-full mx-auto">
         <div className="flex items-center justify-center h-full">
           <div
             ref={vinylRef}
             className={`vinyl-disc flex items-center justify-center rounded-full ${
-              metadata.artworkUrl ? "max-w-[70%]" : "w-[70%] "
+              metadata.artworkUrl ? "max-w-[70%]" : "w-[70%]"
             } aspect-square`}
           >
             {metadata.artworkUrl ? (
@@ -186,17 +187,20 @@ export default function Home() {
             )}
           </div>
         </div>
-        {/* Controls Section */}
-        <div className="relative flex flex-col h-full">
-          {/* Frosted Glass Overlay */}
-
+        <div className="grid grid-cols-2 grid-rows-2 h-full justify-items-end z-20 overflow-hidden">
+          <div className="row-span-2 justify-self-start overflow-y-auto text-left text-xl font-semibold">
+            {lyrics.split("\n").map((line, index) => (
+              <p className="mt-2" key={index}>
+                {line}
+              </p>
+            ))}
+          </div>
           <SongInfo title={metadata.title} artist={metadata.artist} />
-
           <Controls
             isPlaying={isPlaying}
             onPlayPause={handlePlayPause}
-            onRewind={() => (audioRef.current!.currentTime -= 5)}
-            onFastForward={() => (audioRef.current!.currentTime += 5)}
+            onRewind={handleRewind}
+            onFastForward={handleFastForward}
           />
         </div>
       </div>

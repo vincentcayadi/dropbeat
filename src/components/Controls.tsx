@@ -14,7 +14,7 @@ const Controls: React.FC<ControlsProps> = ({
   onFastForward,
 }) => {
   return (
-    <div className="absolute bottom-0 right-0 flex flex-col z-20">
+    <div className="flex flex-col justify-end">
       <button
         onClick={onRewind}
         className="p-4 hover:scale-95 transition duration-300"
