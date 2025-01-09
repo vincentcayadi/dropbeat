@@ -179,16 +179,21 @@ export default function Home() {
     if (!initialLoadRef.current && lyricsRef.current) {
       const timeline = gsap.timeline({
         onComplete: () => {
-          setTempLyrics(lyrics); // Update to new lyrics after fade-out completes
+          // Update the tempLyrics state to new lyrics after fade-out completes
+          setTempLyrics(lyrics);
         },
       });
 
       // Fade out old lyrics
       timeline.to(lyricsRef.current, {
         autoAlpha: 0,
-        y: -10,
+        y: -5,
         duration: 0.5,
         ease: "power2.out",
+        onComplete: () => {
+          // Update lyricsRef content immediately after fade-out
+          setTempLyrics(lyrics);
+        },
       });
 
       // Fade in new lyrics
@@ -199,6 +204,7 @@ export default function Home() {
         ease: "power2.in",
       });
     } else {
+      // On initial load, directly set tempLyrics without animation
       setTempLyrics(lyrics);
       initialLoadRef.current = false;
     }
