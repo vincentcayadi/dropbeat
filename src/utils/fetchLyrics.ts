@@ -13,11 +13,15 @@ const fetchLyrics = async (artist: string, title: string) => {
     });
     console.log("Lyrics response:", response.data.plainLyrics);
     return response.data.plainLyrics;
-  } catch (error: Error) {
-    console.error(
-      "Error fetching lyrics:",
-      error.response?.data || error.message
-    );
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      console.error(
+        "Error fetching lyrics:",
+        error.response?.data || error.message
+      );
+    } else {
+      console.error("An unexpected error occurred:", error);
+    }
     return "Error fetching lyrics";
   }
 };
