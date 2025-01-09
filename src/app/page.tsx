@@ -18,18 +18,44 @@ export default function Home() {
     artworkUrl: null,
   });
   const [lyrics, setLyrics] = useState<string>("No lyrics available");
-  const [tempLyrics, setTempLyrics] = useState<string>("No lyrics available"); // Temporary lyrics state for animation
+  const [tempLyrics, setTempLyrics] = useState<string>("No lyrics available");
   const [isPlaying, setIsPlaying] = useState(false);
-  const [lyricsVisible, setLyricsVisible] = useState(true); // State to toggle lyrics visibility
+  const [lyricsVisible, setLyricsVisible] = useState(true);
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const vinylRef = useRef<HTMLDivElement | null>(null);
   const lyricsRef = useRef<HTMLDivElement | null>(null);
   const initialLoadRef = useRef<boolean>(true);
+  const dragCounter = useRef<number>(0); // Keeps track of drag enter/leave events
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current += 1; // Increment drag counter
+    if (!dragging) {
+      setDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current -= 1; // Decrement drag counter
+    if (dragCounter.current === 0) {
+      setDragging(false);
+    }
+  };
 
   const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current = 0; // Reset drag counter
     setDragging(false);
 
     const droppedFiles = e.dataTransfer.files;
@@ -37,7 +63,7 @@ export default function Home() {
       const uploadedFile = droppedFiles[0];
       setFile(uploadedFile);
 
-      // Reset everything
+      // Reset audio and metadata
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
@@ -186,11 +212,9 @@ export default function Home() {
         backgroundSize: "110%",
         backgroundPosition: "center",
       }}
-      onDragOver={(e) => {
-        e.preventDefault();
-        setDragging(true);
-      }}
-      onDragLeave={() => setDragging(false)}
+      onDragOver={handleDragOver}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       <div className="absolute inset-0 bg-black/30 backdrop-blur-96"></div>
@@ -239,7 +263,7 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="row-span-2 col-span-2" />
+            <div className="row-span-2 col-span-2"></div>
           )}
           <SongInfo title={metadata.title} artist={metadata.artist} />
           <Controls
