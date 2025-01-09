@@ -18,11 +18,15 @@ export default function Home() {
     artworkUrl: null,
   });
   const [lyrics, setLyrics] = useState<string>("No lyrics available");
+  const [tempLyrics, setTempLyrics] = useState<string>("No lyrics available"); // Temporary lyrics state for animation
   const [isPlaying, setIsPlaying] = useState(false);
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const vinylRef = useRef<HTMLDivElement | null>(null);
+  const lyricsRef = useRef<HTMLDivElement | null>(null);
+  const initialLoadRef = useRef<boolean>(true); // Prevents animation on first render
+  const timelineRef = useRef<GSAPTimeline | null>(null);
 
   const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -141,6 +145,41 @@ export default function Home() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!initialLoadRef.current && lyricsRef.current) {
+      const timeline = gsap.timeline({
+        onComplete: () => {
+          // Update the tempLyrics state to new lyrics after fade-out completes
+          setTempLyrics(lyrics);
+        },
+      });
+
+      // Fade out old lyrics
+      timeline.to(lyricsRef.current, {
+        autoAlpha: 0,
+        y: -10,
+        duration: 0.5,
+        ease: "power2.out",
+        onComplete: () => {
+          // Update lyricsRef content immediately after fade-out
+          setTempLyrics(lyrics);
+        },
+      });
+
+      // Fade in new lyrics
+      timeline.to(lyricsRef.current, {
+        autoAlpha: 1,
+        y: 0,
+        duration: 0.75,
+        ease: "power2.in",
+      });
+    } else {
+      // On initial load, directly set tempLyrics without animation
+      setTempLyrics(lyrics);
+      initialLoadRef.current = false;
+    }
+  }, [lyrics]);
+
   return (
     <section
       className="w-screen h-screen bg-[#282828] p-12 text-[#EBEBEB] relative overflow-hidden"
@@ -187,12 +226,17 @@ export default function Home() {
             )}
           </div>
         </div>
-        <div className="grid grid-cols-2 grid-rows-2 h-full justify-items-end z-20 overflow-hidden">
-          <div className="row-span-2 justify-self-start overflow-y-auto text-left text-xl font-semibold">
-            {lyrics.split("\n").map((line, index) => (
-              <p className="mt-2" key={index}>
-                {line}
-              </p>
+        <div className="grid grid-cols-3 grid-rows-2 h-full justify-items-end z-20 overflow-hidden">
+          <div
+            ref={lyricsRef}
+            className="row-span-2 col-span-2 justify-self-start p-4 overflow-y-auto text-left font-semibold leading-relaxed text-lg"
+          >
+            {tempLyrics.split("\n\n").map((paragraph, pIndex) => (
+              <div key={pIndex} className="mb-6">
+                {paragraph.split("\n").map((line, lIndex) => (
+                  <p key={lIndex}>{line}</p>
+                ))}
+              </div>
             ))}
           </div>
           <SongInfo title={metadata.title} artist={metadata.artist} />
