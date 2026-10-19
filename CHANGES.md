@@ -1,3 +1,16 @@
+## Svelte 5 Cleanup
+
+- Finished tracks are no longer deleted from the playlist and IndexedDB. The queue plays endlessly, wrapping from the last track back to the first.
+- Components use Svelte 5 runes (`$props`, `$state`, `$derived`, `$effect`) and `onclick`-style events.
+- Icons come from `@lucide/svelte` instead of pasted SVG markup.
+- The song title is vertical (`writing-mode: vertical-rl`) with an `album · artist` line. On track change the old title leaves through the top and the next rises from the bottom; reduced motion keeps only the crossfade.
+- The vinyl has a fixed light sheen outside the spinning disc, so the reflection stays put while the record turns.
+- The vinyl drop shadow lives on a non-rotating frame. It no longer disappears after the first pause, and it no longer orbits the disc while it spins.
+- Removing a track frees its audio and artwork blob URLs. Removing the last track resets the title, artwork, and lyrics to the empty state.
+- Lyric lines carry line numbers and render in keyed each blocks.
+- Synced lyric timestamps read the fraction as decimal seconds (`[00:14.77]` is 14.77s, not 14.077s), so lines no longer light up up to ~0.9s early.
+- Removed Next.js leftovers (`tailwind.config.ts`, tsconfig plugin, starter SVGs), `LyricsPanel.svelte`, axios (now `fetch`), Zod, and a lyrics mask animation that never ran.
+
 ## UI and Playback Changes
 
 - Lyrics moved into `src/lib/components/LyricsDisplay.svelte` with Svelte `fade` transitions on load/toggle, synced-vs-plain auto selection, smooth autoscroll to the active synced line, hidden scrollbar, and top/bottom gradient fades.

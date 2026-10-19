@@ -8,6 +8,11 @@ export type TrackEntry = {
   lastModified: number;
 };
 
-export type TrackOrder = string[];
+export type PlaylistItem = {
+  id: string;
+  title: string;
+  artist: string;
+  hasBlob: boolean;
+};
 
 export const PLAYLIST_ORDER_KEY = 'dropbeat-playlist-order';

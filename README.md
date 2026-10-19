@@ -2,22 +2,20 @@
 
 This repo is made to just test my js skills and ui skills nothing too fancy like a navidrome or subsonic client.
 
-Drag and Drop Music Player to just play single songs for now.
+Drag and drop audio files anywhere on the page to queue them. The queue is stored in IndexedDB, plays endlessly (the last track wraps back to the first), and pulls lyrics from [lrclib.net](https://lrclib.net).
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+bun install
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). The app starts at `src/App.svelte`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Command | What it does |
+| --- | --- |
+| `bun dev` | Vite dev server on port 3000 |
+| `bun run build` | Production build into `dist/` |
+| `bun test` | Run unit tests |
+| `bunx svelte-check` | Type-check Svelte and TypeScript |

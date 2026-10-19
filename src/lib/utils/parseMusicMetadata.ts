@@ -1,6 +1,6 @@
 // @ts-ignore
 import jsmediatags from "jsmediatags/dist/jsmediatags.min.js";
-import { MetadataSchema, type Metadata } from "../../types";
+import type { Metadata } from "../../types";
 
 export async function parseMusicMetadata(file: File): Promise<Metadata> {
   return new Promise((resolve) => {
@@ -15,17 +15,12 @@ export async function parseMusicMetadata(file: File): Promise<Metadata> {
           artworkUrl = URL.createObjectURL(blob);
         }
 
-        // Validate with Zod before returning
-        const rawMetadata = {
+        resolve({
           title: title || "Unknown Title",
           artist: artist || "Unknown Artist",
           album: album || "Unknown Album",
           artworkUrl,
-        };
-
-        // This validates at runtime and throws if invalid
-        const validatedMetadata = MetadataSchema.parse(rawMetadata);
-        resolve(validatedMetadata);
+        });
       },
       onError: () => {
         resolve({

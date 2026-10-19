@@ -1,79 +1,69 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import gsap from 'gsap';
+  import { fly } from 'svelte/transition';
+  import { quintOut } from 'svelte/easing';
+  import { prefersReducedMotion } from 'svelte/motion';
 
-  export let title: string;
-  export let artist: string;
-  export let isPlaying: boolean = false;
+  type Props = {
+    trackId: string | null;
+    title: string;
+    artist: string;
+    album: string;
+    isPlaying: boolean;
+  };
 
-  let titleElement: HTMLDivElement;
-  let artistElement: HTMLHeadingElement;
-  let isFirstRender = true;
-  let displayedTitle = title;
-  let displayedArtist = artist;
-
-  $: if (!isFirstRender && titleElement && title !== displayedTitle) {
-    const tl = gsap.timeline();
-    tl.to(titleElement, {
-      x: '100%',
-      opacity: 0,
-      duration: 0.75,
-      ease: 'power2.in',
-      onComplete: () => {
-        displayedTitle = title;
-      },
-    });
-    tl.fromTo(
-      titleElement,
-      { x: '-100%', opacity: 0 },
-      { x: '0%', opacity: 1, duration: 1, ease: 'power2.out' }
-    );
-  }
-
-  $: if (!isFirstRender && artistElement && artist !== displayedArtist) {
-    const tl = gsap.timeline();
-    tl.to(artistElement, {
-      x: '100%',
-      opacity: 0,
-      duration: 0.75,
-      ease: 'power2.in',
-      onComplete: () => {
-        displayedArtist = artist;
-      },
-    });
-    tl.fromTo(
-      artistElement,
-      { x: '-100%', opacity: 0 },
-      { x: '0%', opacity: 1, duration: 1, ease: 'power2.out' }
-    );
-  }
-
-  onMount(() => {
-    requestAnimationFrame(() => {
-      isFirstRender = false;
-    });
-  });
+  let { trackId, title, artist, album, isPlaying }: Props = $props();
 </script>
 
-<div class="flex flex-col items-end gap-1.5 text-right w-full">
-  <div class="inline-flex gap-1 items-end h-3 mb-1" aria-label="Now playing indicator">
-    <span class={`bar ${isPlaying ? 'playing' : 'paused'}`}></span>
-    <span class={`bar delay-150 ${isPlaying ? 'playing' : 'paused'}`}></span>
-    <span class={`bar delay-300 ${isPlaying ? 'playing' : 'paused'}`}></span>
+<div class="flex min-h-0 flex-1 flex-col items-end gap-3">
+  <div class="inline-flex gap-1 items-end h-3" aria-label="Now playing indicator">
+    <span class={['bar', isPlaying ? 'playing' : 'paused']}></span>
+    <span class={['bar delay-150', isPlaying ? 'playing' : 'paused']}></span>
+    <span class={['bar delay-300', isPlaying ? 'playing' : 'paused']}></span>
   </div>
-  <div class="relative w-full min-h-[2.5rem] overflow-hidden">
-    <div bind:this={titleElement} class="font-bold text-[1.8rem] leading-tight tracking-tight relative w-full">
-      {displayedTitle}
-    </div>
-  </div>
-  <div class="relative w-full min-h-[1.5rem] overflow-hidden">
-    <h2 bind:this={artistElement} class="text-base text-[#e7e7e7] leading-tight relative w-full">
-      {displayedArtist}
-    </h2>
+
+  <!-- Tracks ride up the column: the old one leaves through the top while the next rises from the bottom.
+       Both share one grid cell so they overlap instead of pushing each other. Reduced motion keeps only the crossfade. -->
+  <div class="stage">
+    {#key trackId}
+      <div class="card">
+        <p
+          class="truncate font-bold text-[1.8rem] leading-tight tracking-tight"
+          in:fly={{ y: prefersReducedMotion.current ? 0 : '100%', duration: 600, easing: quintOut }}
+          out:fly={{ y: prefersReducedMotion.current ? 0 : '-100%', duration: 350, easing: quintOut }}
+        >
+          {title}
+        </p>
+        <p
+          class="subtitle truncate text-base text-[#e7e7e7] leading-tight"
+          in:fly={{ y: prefersReducedMotion.current ? 0 : '100%', duration: 600, delay: 60, easing: quintOut }}
+          out:fly={{ y: prefersReducedMotion.current ? 0 : '-100%', duration: 350, easing: quintOut }}
+        >
+          {album} · {artist}
+        </p>
+      </div>
+    {/key}
   </div>
 </div>
 
 <style>
+  .stage {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .card {
+    grid-area: 1 / 1;
+    justify-self: end;
+    writing-mode: vertical-rl;
+  }
+
+  .subtitle {
+    margin-block-start: 0.375rem;
+  }
+
   .bar {
     width: 3px;
     background: #ffffff;

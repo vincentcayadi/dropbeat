@@ -6,9 +6,6 @@ export default {
       backdropBlur: {
         96: '96px',
       },
-      rotate: {
-        270: '270deg',
-      },
     },
   },
   plugins: [],

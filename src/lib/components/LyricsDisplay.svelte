@@ -2,29 +2,34 @@
   import { fade } from 'svelte/transition';
   import type { SyncedLyricLine } from '../utils/parseSyncedLyrics';
 
-  export let visible: boolean;
-  export let syncedLines: SyncedLyricLine[] = [];
-  export let plainLyrics: string;
-  export let currentLineIndex: number;
-  export let version: number;
+  type Props = {
+    visible: boolean;
+    syncedLines: SyncedLyricLine[];
+    plainLyrics: string;
+    currentLineIndex: number;
+    version: number;
+  };
 
-  let container: HTMLDivElement;
+  let { visible, syncedLines, plainLyrics, currentLineIndex, version }: Props = $props();
 
-  const paragraphs = () => plainLyrics.split('\n\n');
+  let contentElement = $state<HTMLDivElement>();
+  // Plain lyrics are static text, so a line's position is its identity; number them for keyed each blocks.
+  const paragraphs = $derived(
+    plainLyrics.split('\n\n').map((block, id) => ({
+      id,
+      lines: block.split('\n').map((text, lineId) => ({ id: lineId, text })),
+    }))
+  );
 
-  let contentElement: HTMLDivElement;
-
-  $: if (contentElement && syncedLines.length && currentLineIndex >= 0 && visible) {
-    const lines = contentElement.querySelectorAll('.synced-line');
-    const active = lines[currentLineIndex] as HTMLElement | undefined;
-    if (active) {
-      const centerOffset =
-        active.offsetTop - contentElement.clientHeight / 2 + active.clientHeight / 2;
-      const maxScroll = Math.max(0, contentElement.scrollHeight - contentElement.clientHeight);
-      const target = Math.min(Math.max(0, centerOffset), maxScroll);
-      contentElement.scrollTo({ top: target, behavior: 'smooth' });
-    }
-  }
+  // Keep the active synced line centred in the panel.
+  $effect(() => {
+    if (!contentElement || !syncedLines.length || currentLineIndex < 0 || !visible) return;
+    const active = contentElement.querySelectorAll<HTMLElement>('.synced-line')[currentLineIndex];
+    if (!active) return;
+    const centerOffset = active.offsetTop - contentElement.clientHeight / 2 + active.clientHeight / 2;
+    const maxScroll = Math.max(0, contentElement.scrollHeight - contentElement.clientHeight);
+    contentElement.scrollTo({ top: Math.min(Math.max(0, centerOffset), maxScroll), behavior: 'smooth' });
+  });
 </script>
 
 {#if visible}
@@ -36,18 +41,21 @@
         transition:fade={{ duration: 350 }}
       >
         {#if syncedLines.length}
-          {#each syncedLines as line, index}
+          {#each syncedLines as line (line.id)}
             <p
-              class={`synced-line mb-3 transition-all duration-200 ${index === currentLineIndex ? 'text-white font-bold' : 'text-white/70'}`}
+              class={[
+                'synced-line mb-3 transition-all duration-200',
+                line.id === currentLineIndex ? 'text-white font-bold' : 'text-white/70',
+              ]}
             >
               {line.text}
             </p>
           {/each}
         {:else}
-          {#each paragraphs() as paragraph, pIndex}
+          {#each paragraphs as paragraph (paragraph.id)}
             <div class="mb-6">
-              {#each paragraph.split('\n') as line, lIndex}
-                <p>{line}</p>
+              {#each paragraph.lines as line (line.id)}
+                <p>{line.text}</p>
               {/each}
             </div>
           {/each}

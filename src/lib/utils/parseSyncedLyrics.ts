@@ -1,4 +1,5 @@
 export type SyncedLyricLine = {
+  id: number; // line number after sorting; lyrics never reorder, so position is the line's identity
   time: number; // seconds
   text: string;
 };
@@ -12,14 +13,13 @@ export function parseSyncedLyrics(raw: string | null | undefined): SyncedLyricLi
     .map((line) => {
       const match = line.match(/^\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]\s*(.*)$/);
       if (!match) return null;
-      const [, m, s, ms, text] = match;
-      const minutes = Number(m);
-      const seconds = Number(s);
-      const millis = ms ? Number(ms) : 0;
-      const time = minutes * 60 + seconds + millis / 1000;
+      const [, m, s, fraction, text] = match;
+      // Digits after the dot are a decimal fraction (LRC writes hundredths: `.34` = 0.34s), not milliseconds.
+      const time = Number(m) * 60 + Number(s) + (fraction ? Number(`0.${fraction}`) : 0);
       if (!text) return null;
-      return { time, text } as SyncedLyricLine;
+      return { time, text };
     })
-    .filter((entry): entry is SyncedLyricLine => Boolean(entry))
-    .sort((a, b) => a.time - b.time);
+    .filter((entry) => entry !== null)
+    .sort((a, b) => a.time - b.time)
+    .map((entry, id) => ({ id, ...entry }));
 }

@@ -17,6 +17,12 @@ body {
   min-height: 100vh;
 }
 
+/* The shadow sits on the frame, not the disc: a box-shadow on a rotating element rotates its offset with it. */
+.vinyl-frame {
+  border-radius: 9999px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
 .vinyl-disc {
   background: repeating-radial-gradient(
     circle,
@@ -26,30 +32,30 @@ body {
     #101010 2%
   );
   border: 1px solid #525252;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
   overflow: hidden;
   position: relative;
 }
 
-.vinyl-disc::before {
-  content: '';
+/* Lives outside the spinning disc so the reflection stays put while the grooves turn under it, like light on a real record. */
+.vinyl-sheen {
   position: absolute;
-  width: 120%;
-  height: 120%;
-  top: -10%;
-  left: -10%;
-  background: linear-gradient(
-    0deg,
-    rgba(255, 255, 255, 0.08) 0%,
-    rgba(255, 255, 255, 0) 30%,
-    rgba(255, 255, 255, 0.08) 70%,
-    rgba(255, 255, 255, 0) 100%
+  inset: 0;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: conic-gradient(
+    from 15deg,
+    transparent 0deg,
+    rgba(255, 255, 255, 0.05) 12deg,
+    rgba(255, 255, 255, 0.32) 30deg,
+    rgba(255, 255, 255, 0.05) 48deg,
+    transparent 62deg 180deg,
+    rgba(255, 255, 255, 0.05) 192deg,
+    rgba(255, 255, 255, 0.22) 210deg,
+    rgba(255, 255, 255, 0.05) 228deg,
+    transparent 242deg
   );
   mix-blend-mode: screen;
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.backdrop-blur-96 {
-  backdrop-filter: blur(96px);
+  /* The artwork label covers the inner 70% of the disc; keep it matte. */
+  -webkit-mask: radial-gradient(closest-side, transparent 70%, #000 71%);
+  mask: radial-gradient(closest-side, transparent 70%, #000 71%);
 }

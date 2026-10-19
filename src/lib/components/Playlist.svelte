@@ -1,51 +1,46 @@
 <script lang="ts">
-  export type PlaylistItem = {
-    id: string;
-    title: string;
-    artist: string;
-    hasBlob: boolean;
+  import ChevronUp from '@lucide/svelte/icons/chevron-up';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import X from '@lucide/svelte/icons/x';
+  import type { PlaylistItem } from '../utils/playlistTypes';
+
+  type Props = {
+    items: PlaylistItem[];
+    currentId: string | null;
+    onPlay: (id: string) => void;
+    onRemove: (id: string) => void;
+    onMoveUp: (id: string) => void;
+    onMoveDown: (id: string) => void;
   };
 
-  export let items: PlaylistItem[] = [];
-  export let currentId: string | null = null;
-  export let onPlay: (id: string) => void;
-  export let onRemove: (id: string) => void;
-  export let onMoveUp: (id: string) => void;
-  export let onMoveDown: (id: string) => void;
+  let { items, currentId, onPlay, onRemove, onMoveUp, onMoveDown }: Props = $props();
 </script>
 
 <div class="playlist">
   {#if !items.length}
     <p class="empty">Drop tracks to build a playlist.</p>
   {:else}
-    {#each items as item}
-        <div class={`row ${currentId === item.id ? 'active' : ''}`}>
-          <div
-            class="meta"
-            role="button"
-            tabindex="0"
-          on:click={() => onPlay(item.id)}
-          on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && onPlay(item.id)}
+    {#each items as item (item.id)}
+      <div class={['row', currentId === item.id && 'active']}>
+        <div
+          class="meta"
+          role="button"
+          tabindex="0"
+          onclick={() => onPlay(item.id)}
+          onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && onPlay(item.id)}
         >
           <div class="title">{item.title}</div>
           <div class="artist">{item.artist}{!item.hasBlob ? ' · needs file' : ''}</div>
-          </div>
-          <div class="controls">
-            <button on:click={() => onMoveUp(item.id)} aria-label="Move up" disabled={currentId === item.id}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m18 15-6-6-6 6" />
-              </svg>
-            </button>
-            <button on:click={() => onMoveDown(item.id)} aria-label="Move down" disabled={currentId === item.id}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-            </button>
-          <button on:click={() => onRemove(item.id)} aria-label="Remove">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
-            </svg>
+        </div>
+        <div class="controls">
+          <button onclick={() => onMoveUp(item.id)} aria-label="Move up" disabled={currentId === item.id}>
+            <ChevronUp size={20} />
+          </button>
+          <button onclick={() => onMoveDown(item.id)} aria-label="Move down" disabled={currentId === item.id}>
+            <ChevronDown size={20} />
+          </button>
+          <button onclick={() => onRemove(item.id)} aria-label="Remove">
+            <X size={20} />
           </button>
         </div>
       </div>
