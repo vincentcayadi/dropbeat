@@ -33,14 +33,18 @@
 </script>
 
 {#if visible}
-  <div class="relative w-full max-w-3xl h-[70vh]">
+  <div class="relative w-full max-w-3xl h-full md:h-[70vh]">
     {#key version}
+      <!-- Out before in: the old lyrics are gone before the new ones fade up, so the two never overlap. -->
       <div
         bind:this={contentElement}
-        class="absolute inset-0 overflow-y-auto text-left font-semibold leading-relaxed text-lg lyrics-panel p-4"
-        transition:fade={{ duration: 350 }}
+        class="absolute inset-0 flex flex-col overflow-y-auto text-left font-semibold leading-relaxed text-lg lyrics-panel p-4"
+        in:fade={{ duration: 250, delay: 150 }}
+        out:fade={{ duration: 150 }}
       >
         {#if syncedLines.length}
+          <!-- Half-height spacers let every line, including the first and last, scroll to the vertical centre. -->
+          <div class="h-1/2 shrink-0" aria-hidden="true"></div>
           {#each syncedLines as line (line.id)}
             <p
               class={[
@@ -51,14 +55,18 @@
               {line.text}
             </p>
           {/each}
+          <div class="h-1/2 shrink-0" aria-hidden="true"></div>
         {:else}
-          {#each paragraphs as paragraph (paragraph.id)}
-            <div class="mb-6">
-              {#each paragraph.lines as line (line.id)}
-                <p>{line.text}</p>
-              {/each}
-            </div>
-          {/each}
+          <!-- Auto margins centre short text and collapse to zero once it overflows and scrolls. -->
+          <div class="my-auto">
+            {#each paragraphs as paragraph (paragraph.id)}
+              <div class="mb-6">
+                {#each paragraph.lines as line (line.id)}
+                  <p>{line.text}</p>
+                {/each}
+              </div>
+            {/each}
+          </div>
         {/if}
       </div>
     {/key}
@@ -68,6 +76,8 @@
 <style>
   .lyrics-panel {
     scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
+    mask-image: linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
   }
 
   .lyrics-panel::-webkit-scrollbar {

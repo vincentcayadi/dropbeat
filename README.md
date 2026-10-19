@@ -2,7 +2,7 @@
 
 This repo is made to just test my js skills and ui skills nothing too fancy like a navidrome or subsonic client.
 
-Drag and drop audio files anywhere on the page to queue them. The queue is stored in IndexedDB, plays endlessly (the last track wraps back to the first), and pulls lyrics from [lrclib.net](https://lrclib.net).
+Drag and drop audio files anywhere on the page to queue them. The queue is stored in IndexedDB, plays endlessly (the last track wraps back to the first), and pulls lyrics from [lrclib.net](https://lrclib.net). Media keys and the OS lock screen or Control Center can play, pause, skip, and seek.
 
 ## Getting Started
 

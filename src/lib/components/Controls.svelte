@@ -1,22 +1,35 @@
 <script lang="ts">
+  import type { Component } from 'svelte';
   import EighthNotes from '@lucide/svelte/icons/eighth-notes';
+  import SkipBack from '@lucide/svelte/icons/skip-back';
   import Rewind from '@lucide/svelte/icons/rewind';
   import Play from '@lucide/svelte/icons/play';
   import Pause from '@lucide/svelte/icons/pause';
   import FastForward from '@lucide/svelte/icons/fast-forward';
+  import SkipForward from '@lucide/svelte/icons/skip-forward';
   import ListMusic from '@lucide/svelte/icons/list-music';
 
   type Props = {
     isPlaying: boolean;
     onPlayPause: () => void;
+    onPrevious: () => void;
+    onNext: () => void;
     onRewind: () => void;
     onFastForward: () => void;
     onToggleLyrics: () => void;
     onTogglePlaylist: () => void;
   };
 
-  let { isPlaying, onPlayPause, onRewind, onFastForward, onToggleLyrics, onTogglePlaylist }: Props =
-    $props();
+  let {
+    isPlaying,
+    onPlayPause,
+    onPrevious,
+    onNext,
+    onRewind,
+    onFastForward,
+    onToggleLyrics,
+    onTogglePlaylist,
+  }: Props = $props();
 
   // Removing the class and forcing a reflow restarts the CSS animation on repeated clicks.
   function bounce(node: HTMLElement) {
@@ -26,58 +39,28 @@
   }
 </script>
 
-<div class="flex flex-col items-center justify-end gap-8">
+{#snippet control(label: string, onPress: () => void, Icon: Component<{ class?: string }>)}
   <button
     onclick={(e) => {
-      onToggleLyrics();
+      onPress();
       bounce(e.currentTarget);
     }}
-    class="p-4 pressable"
-    aria-label="Toggle lyrics"
+    class="pressable p-2.5 md:p-4"
+    aria-label={label}
   >
-    <EighthNotes class="drop-shadow-lg" />
+    <Icon class="drop-shadow-lg" />
   </button>
+{/snippet}
 
-  <button
-    onclick={(e) => {
-      onRewind();
-      bounce(e.currentTarget);
-    }}
-    class="p-4 pressable"
-    aria-label="Rewind"
-  >
-    <Rewind class="drop-shadow-lg" />
-  </button>
-
-  <button
-    onclick={(e) => {
-      onPlayPause();
-      bounce(e.currentTarget);
-    }}
-    class="p-4 pressable"
-    aria-label={isPlaying ? 'Pause' : 'Play'}
-  >
-    {#if isPlaying}
-      <Pause class="drop-shadow-lg" />
-    {:else}
-      <Play class="drop-shadow-lg" />
-    {/if}
-  </button>
-
-  <button
-    onclick={(e) => {
-      onFastForward();
-      bounce(e.currentTarget);
-    }}
-    class="p-4 pressable"
-    aria-label="Fast forward"
-  >
-    <FastForward class="drop-shadow-lg" />
-  </button>
-
-  <button onclick={onTogglePlaylist} class="p-4 pressable" aria-label="Toggle playlist">
-    <ListMusic />
-  </button>
+<!-- A row under the lyrics on phones; a column beside the title from md up. -->
+<div class="flex flex-row items-center justify-center gap-1 md:flex-col md:justify-end md:gap-6">
+  {@render control('Toggle lyrics', onToggleLyrics, EighthNotes)}
+  {@render control('Previous track', onPrevious, SkipBack)}
+  {@render control('Rewind', onRewind, Rewind)}
+  {@render control(isPlaying ? 'Pause' : 'Play', onPlayPause, isPlaying ? Pause : Play)}
+  {@render control('Fast forward', onFastForward, FastForward)}
+  {@render control('Next track', onNext, SkipForward)}
+  {@render control('Toggle playlist', onTogglePlaylist, ListMusic)}
 </div>
 
 <style>

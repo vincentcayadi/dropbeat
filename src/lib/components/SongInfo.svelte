@@ -14,20 +14,21 @@
   let { trackId, title, artist, album, isPlaying }: Props = $props();
 </script>
 
-<div class="flex min-h-0 flex-1 flex-col items-end gap-3">
+<div class="flex min-h-0 w-full flex-col items-center gap-2 md:w-auto md:items-end md:gap-3">
   <div class="inline-flex gap-1 items-end h-3" aria-label="Now playing indicator">
     <span class={['bar', isPlaying ? 'playing' : 'paused']}></span>
     <span class={['bar delay-150', isPlaying ? 'playing' : 'paused']}></span>
     <span class={['bar delay-300', isPlaying ? 'playing' : 'paused']}></span>
   </div>
 
-  <!-- Tracks ride up the column: the old one leaves through the top while the next rises from the bottom.
-       Both share one grid cell so they overlap instead of pushing each other. Reduced motion keeps only the crossfade. -->
+  <!-- Tracks ride up: the old title leaves through the top while the next rises from the bottom. Vertical from md up,
+       a one-line ticker on phones. Both share one grid cell so they overlap instead of pushing each other.
+       Reduced motion keeps only the crossfade. -->
   <div class="stage">
     {#key trackId}
       <div class="card">
         <p
-          class="truncate font-bold text-[1.8rem] leading-tight tracking-tight"
+          class="truncate font-bold text-2xl md:text-[1.8rem] leading-tight tracking-tight"
           in:fly={{ y: prefersReducedMotion.current ? 0 : '100%', duration: 600, easing: quintOut }}
           out:fly={{ y: prefersReducedMotion.current ? 0 : '-100%', duration: 350, easing: quintOut }}
         >
@@ -48,16 +49,30 @@
 <style>
   .stage {
     display: grid;
-    grid-template-rows: minmax(0, 1fr);
-    flex: 1;
-    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
     overflow: hidden;
   }
 
   .card {
     grid-area: 1 / 1;
-    justify-self: end;
-    writing-mode: vertical-rl;
+    text-align: center;
+  }
+
+  @media (min-width: 768px) {
+    .stage {
+      grid-template-columns: auto;
+      grid-template-rows: minmax(0, 1fr);
+      width: auto;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .card {
+      justify-self: end;
+      text-align: start;
+      writing-mode: vertical-rl;
+    }
   }
 
   .subtitle {

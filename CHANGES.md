@@ -1,3 +1,13 @@
+## Playback and Layout
+
+- Previous/next track buttons. Next wraps from the last track to the first; previous restarts the song after its first 3 seconds, otherwise goes back a track (wrapping to the last).
+- Media Session API: media keys and the OS lock screen or Control Center show the title, artist, and artwork, and can play, pause, skip, and seek.
+- From md up, the controls sit beside a full-height vertical title, so titles no longer truncate on 720px-tall screens. Phones stack vinyl, a horizontal title ticker, lyrics, and a row of controls.
+- Synced lyrics scroll the active line to the vertical centre; short or plain lyrics are centred; the panel fades out at its top and bottom edges.
+- Old lyrics fade out before new ones fade in, instead of overlapping.
+- A second click on Remove during the fade-out is ignored instead of removing the track twice.
+- `play()` failures (no track, autoplay blocked, interrupted load) no longer leave the volume at 0, the vinyl spinning, or the Pause icon showing.
+
 ## Svelte 5 Cleanup
 
 - Finished tracks are no longer deleted from the playlist and IndexedDB. The queue plays endlessly, wrapping from the last track back to the first.

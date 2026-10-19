@@ -81,7 +81,35 @@
     }
   }
 
+  // OS media controls (media keys, lock screen, Control Center) mirror the player and drive the same handlers.
+  $effect(() => {
+    navigator.mediaSession.metadata = currentTrackId
+      ? new MediaMetadata({
+          title: metadata.title,
+          artist: metadata.artist,
+          album: metadata.album,
+          artwork: metadata.artworkUrl ? [{ src: metadata.artworkUrl }] : [],
+        })
+      : null;
+  });
+
+  $effect(() => {
+    navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+  });
+
   onMount(async () => {
+    const session = navigator.mediaSession;
+    session.setActionHandler('play', () => {
+      if (!isPlaying) handlePlayPause();
+    });
+    session.setActionHandler('pause', () => {
+      if (isPlaying) handlePlayPause();
+    });
+    session.setActionHandler('previoustrack', handlePrevious);
+    session.setActionHandler('nexttrack', () => skipTrack(1));
+    session.setActionHandler('seekbackward', () => seekBy(-5, 'backward'));
+    session.setActionHandler('seekforward', () => seekBy(5, 'forward'));
+
     await hydratePlaylist();
     if (tracks.length) {
       playTrack(tracks[0].id, false);
@@ -139,8 +167,7 @@
 
     audioElement.src = track.objectUrl;
     audioElement.load();
-    if (shouldRamp) {
-      await rampToPlay();
+    if (shouldRamp && (await rampToPlay())) {
       startVinylRotation();
       isPlaying = true;
     }
@@ -210,28 +237,40 @@
     saveOrder();
   }
 
+  // Tracks mid-removal. The row stays visible through the 0.4s fade-out, so a second click on its Remove button
+  // must be a no-op; dropping the row early instead would slide the next track under the cursor.
+  const removingIds = new Set<string>();
+
   async function removeTrack(id: string) {
     const idx = tracks.findIndex((t) => t.id === id);
-    if (idx === -1) return;
+    if (idx === -1 || removingIds.has(id)) return;
+    removingIds.add(id);
+    const removed = tracks[idx];
     const wasCurrentTrack = currentTrackId === id;
     const wasPlaying = isPlaying && wasCurrentTrack;
 
-    // Smoothly fade out if currently playing
-    if (wasPlaying && audioElement) {
-      slowStopVinyl();
-      await new Promise(resolve => {
-        gsap.to(audioElement, {
-          volume: 0,
-          duration: 0.4,
-          ease: 'power2.in',
-          onComplete: resolve
+    try {
+      // Smoothly fade out if currently playing
+      if (wasPlaying && audioElement) {
+        slowStopVinyl();
+        await new Promise(resolve => {
+          gsap.to(audioElement, {
+            volume: 0,
+            duration: 0.4,
+            ease: 'power2.in',
+            onComplete: resolve
+          });
         });
-      });
-    }
+        // Restore the volume while silent, so whatever plays next never inherits volume 0.
+        audioElement.pause();
+        audioElement.volume = 1;
+      }
 
-    const removed = tracks[idx];
-    await deleteTrack(id);
-    await deleteCachedLyrics(id);
+      await deleteTrack(id);
+      await deleteCachedLyrics(id);
+    } finally {
+      removingIds.delete(id);
+    }
     tracks = tracks.filter((t) => t.id !== id);
     saveOrder();
 
@@ -239,7 +278,6 @@
       const next = tracks[idx] || tracks[idx - 1];
       if (next) {
         await playTrack(next.id);
-        if (audioElement) audioElement.volume = 1;
       } else {
         isPlaying = false;
         currentTrackId = null;
@@ -251,7 +289,6 @@
         if (audioElement) {
           audioElement.pause();
           audioElement.removeAttribute('src');
-          audioElement.volume = 1;
         }
       }
     }
@@ -357,16 +394,23 @@
     });
   }
 
-  async function rampToPlay() {
-    if (!audioElement) return;
+  // Resolves false when the browser refuses to play: no source, autoplay blocked, or a newer load interrupted it.
+  async function rampToPlay(): Promise<boolean> {
+    if (!audioElement) return false;
     gsap.killTweensOf(audioElement);
     audioElement.playbackRate = 0.85;
-    await audioElement.play();
+    try {
+      await audioElement.play();
+    } catch {
+      audioElement.playbackRate = 1;
+      return false;
+    }
     gsap.to(audioElement, {
       playbackRate: 1,
       duration: 0.6,
       ease: 'power2.out',
     });
+    return true;
   }
 
   function rampToPause() {
@@ -384,16 +428,21 @@
   }
 
   function handlePlayPause() {
-    if (!audioElement) return;
+    if (!audioElement || !currentTrackId) return;
 
     if (isPlaying) {
       rampToPause();
       slowStopVinyl();
-    } else {
-      rampToPlay();
-      startVinylRotation();
+      isPlaying = false;
+      return;
     }
-    isPlaying = !isPlaying;
+    isPlaying = true;
+    startVinylRotation();
+    rampToPlay().then((started) => {
+      if (started) return;
+      isPlaying = false;
+      slowStopVinyl();
+    });
   }
 
   async function seekBy(deltaSeconds: number, direction: 'forward' | 'backward') {
@@ -461,11 +510,22 @@
     }
   }
 
-  // Endless queue: a finished track hands off to the next one, wrapping from the last back to the first.
-  function handleAudioEnded() {
+  // The queue is endless both ways: next wraps from the last track to the first, previous from the first to the last.
+  function skipTrack(step: 1 | -1) {
     if (!tracks.length) return;
     const idx = tracks.findIndex((t) => t.id === currentTrackId);
-    playTrack(tracks[(idx + 1) % tracks.length].id);
+    const target = idx === -1 ? 0 : (idx + step + tracks.length) % tracks.length;
+    playTrack(tracks[target].id);
+  }
+
+  // Like most players: after the first 3 seconds "previous" restarts the song; near its start it goes back a track.
+  function handlePrevious() {
+    if (!audioElement) return;
+    if (audioElement.currentTime > 3) {
+      audioElement.currentTime = 0;
+      return;
+    }
+    skipTrack(-1);
   }
 
   function updateCurrentLine(time: number) {
@@ -491,7 +551,7 @@
 </script>
 
 <section
-  class="w-screen h-screen bg-[#282828] p-12 text-[#EBEBEB] relative overflow-hidden"
+  class="w-screen h-dvh bg-[#282828] p-6 md:p-12 text-[#EBEBEB] relative overflow-hidden"
   style:background-image={metadata.artworkUrl ? `url(${metadata.artworkUrl})` : null}
   style:background-size={metadata.artworkUrl ? '110%' : null}
   style:background-position={metadata.artworkUrl ? 'center' : null}
@@ -519,16 +579,16 @@
 
   <audio
     bind:this={audioElement}
-    onended={handleAudioEnded}
+    onended={() => skipTrack(1)}
     onpause={() => (isPlaying = false)}
     onplay={() => (isPlaying = true)}
     ontimeupdate={(e) => updateCurrentLine(e.currentTarget.currentTime)}
   ></audio>
 
-  <div class="relative w-full h-full flex flex-col md:flex-row items-center md:items-stretch md:justify-between gap-8">
-    <!-- Left: Vinyl -->
-    <div class="flex items-center justify-center flex-[1.2]">
-      <div bind:this={vinylFrame} class="vinyl-frame relative w-full max-w-[580px] aspect-square">
+  <!-- Phones stack vinyl, title, lyrics, controls. From md up: vinyl | lyrics | controls + full-height vertical title. -->
+  <div class="relative flex h-full w-full flex-col items-center gap-5 md:flex-row md:items-stretch md:justify-between md:gap-8">
+    <div class="order-1 flex shrink-0 items-center justify-center md:flex-[1.2]">
+      <div bind:this={vinylFrame} class="vinyl-frame relative aspect-square w-[min(62vw,300px)] md:w-full md:max-w-[580px]">
         <div
           bind:this={vinylElement}
           class="vinyl-disc flex items-center justify-center rounded-full w-full h-full select-none cursor-default"
@@ -549,8 +609,7 @@
       </div>
     </div>
 
-    <!-- Center: Lyrics -->
-    <div class="flex-1 flex items-center justify-center">
+    <div class="order-3 flex min-h-0 w-full flex-1 items-center justify-center">
       <LyricsDisplay
         visible={lyricsVisible}
         syncedLines={syncedLyrics}
@@ -560,23 +619,29 @@
       />
     </div>
 
-    <!-- Right: Song Info + Controls -->
-    <div class="flex flex-col items-end gap-8 min-w-[220px]">
-      <SongInfo
-        trackId={currentTrackId}
-        title={metadata.title}
-        artist={metadata.artist}
-        album={metadata.album}
-        {isPlaying}
-      />
-      <Controls
-        {isPlaying}
-        onPlayPause={handlePlayPause}
-        onRewind={() => seekBy(-5, 'backward')}
-        onFastForward={() => seekBy(5, 'forward')}
-        onToggleLyrics={() => (lyricsVisible = !lyricsVisible)}
-        onTogglePlaylist={() => (playlistOpen = !playlistOpen)}
-      />
+    <!-- `contents` on phones lets the title and controls take their own places in the stacked column. -->
+    <div class="contents md:order-4 md:flex md:items-end md:gap-6">
+      <div class="order-4 md:order-none">
+        <Controls
+          {isPlaying}
+          onPlayPause={handlePlayPause}
+          onPrevious={handlePrevious}
+          onNext={() => skipTrack(1)}
+          onRewind={() => seekBy(-5, 'backward')}
+          onFastForward={() => seekBy(5, 'forward')}
+          onToggleLyrics={() => (lyricsVisible = !lyricsVisible)}
+          onTogglePlaylist={() => (playlistOpen = !playlistOpen)}
+        />
+      </div>
+      <div class="order-2 w-full md:order-none md:flex md:w-auto md:self-stretch">
+        <SongInfo
+          trackId={currentTrackId}
+          title={metadata.title}
+          artist={metadata.artist}
+          album={metadata.album}
+          {isPlaying}
+        />
+      </div>
     </div>
   </div>
 
